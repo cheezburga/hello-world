@@ -1,10 +1,7 @@
-package com.sli.deeplearning_experiment;
-import java.awt.BasicStroke;
+package com.sli.linear_regression;
 import java.awt.Color;
 import java.awt.Shape;
-import java.awt.Stroke;
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.Scanner;
 
 import javax.swing.JFrame;
@@ -21,18 +18,20 @@ import org.jfree.chart.plot.PlotOrientation;
 import org.jfree.chart.plot.XYPlot;
 import org.jfree.chart.renderer.xy.XYItemRenderer;
 import org.jfree.chart.renderer.xy.XYLineAndShapeRenderer;
-import org.jfree.data.xy.XYCoordinate;
 import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;
 import org.jfree.util.ShapeUtilities;
 import org.jzy3d.maths.Range;
-import org.jzy3d.plot3d.builder.Mapper;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.springframework.core.io.ClassPathResource;
+
+import com.sli.deeplearning_experiment.ContourPlot;
+import com.sli.deeplearning_experiment.CostMapper;
+import com.sli.deeplearning_experiment.SurfacePlot;
 
 public class Ex1 {
 	/**
@@ -49,7 +48,7 @@ public class Ex1 {
 		//======================= Part 2: Plotting =======================
 		System.out.println("Plotting Data ...\n");
 		int totalSamples = 97;
-		INDArray data = load("machine-learning/ex1/ex1data1.txt", totalSamples);
+		INDArray data = load("machine-learning/linear_regression/ex1data1.txt", totalSamples);
 		INDArray x = data.getColumn(0).dup();
 		INDArray y = data.getColumn(1).dup();
 	

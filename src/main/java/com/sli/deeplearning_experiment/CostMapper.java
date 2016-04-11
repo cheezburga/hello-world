@@ -6,6 +6,8 @@ import org.jzy3d.plot3d.builder.Mapper;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
+import com.sli.linear_regression.Ex1;
+
 public class CostMapper extends Mapper {
 	private INDArray theX;
 	private INDArray theY;

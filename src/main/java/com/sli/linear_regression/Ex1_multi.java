@@ -31,6 +31,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.inverse.InvertMatrix;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.springframework.core.io.ClassPathResource;
 
@@ -75,8 +76,7 @@ public class Ex1_multi {
 		double alpha = 0.1;
 		
 		
-		//double j = computeCost(X,y, theta);
-		//System.out.println(j);
+	
 		
 		//run gradient descent
 		INDArray[] results = gradientDescentMulti(X,y,theta, alpha, iterations);
@@ -89,21 +89,26 @@ public class Ex1_multi {
 		
 		
 		plotData(iterations, jHistory);
-		//plotData2(x, y, x, X.mmul(theta));
 		
 		
-		// Predict values for population sizes of 35,000 and 70,000
+		
+		// Prediction
 		double predict1 = Nd4j.hstack(Nd4j.ones(1, 1),Nd4j.create(new double[]{1650, 3}).subColumnVector(mu).divColumnVector(sigma)).mmul(theta).getDouble(0);
 		System.out.println("Predicted price of a 1650 sq-ft, 3 br house (using gradient descent): "+predict1);
-		double predict2 = Nd4j.create(new double[]{1, 7}).mmul(theta).getDouble(0);
-		System.out.println("For population = 70,000, we predict a profit of "+predict2*10000+",...");
-
-		//============= Part 4: Visualizing J(theta_0, theta_1) =============
-		System.out.println("Visualizing J(theta_0, theta_1) ...\n");
-		//surf(X,y);
-		contour(X,y, theta.getDouble(0), theta.getDouble(1));
+		
+		X = Nd4j.hstack(Nd4j.ones(totalSamples, 1),x);//no need to do feature normalization
+		theta = normalEqn(X,y);
+		System.out.println(theta);
+		double predict2 = Nd4j.hstack(Nd4j.ones(1, 1),Nd4j.create(new double[]{1650, 3})).mmul(theta).getDouble(0);//no mu nor sigma
+		System.out.println("Predicted price of a 1650 sq-ft, 3 br house (using gradient descent) and normal eqn: "+predict2);
+		
+		
+		
 	}
-	
+	private static INDArray normalEqn(INDArray X, INDArray y){
+		return InvertMatrix.invert(X.transpose().mmul(X), false).mmul(X.transpose()).mmul(y);
+		
+	}
 	private static INDArray[] featureNormalize(INDArray X){
 		INDArray mu = X.mean(0);
 		System.out.println(mu);
@@ -114,31 +119,7 @@ public class Ex1_multi {
 		return new INDArray[]{normX, mu, sigma};
 	}
 	
-	private static void surf(INDArray X, INDArray y) throws Exception{
-	      // Define a function to plot
-       CostMapper mapper = new CostMapper(X, y);
-
-        // Define range and precision for the function to plot
-        Range rangeX = new Range(-10, 10);
-        int stepX = 100;
-        Range rangeY = new Range(-1,4);
-        int stepY = 100;
-        SurfacePlot sp = new SurfacePlot(rangeX, stepX, rangeY, stepY, mapper);
-        sp.plot();
-	}
 	
-	private static void contour(INDArray X, INDArray y, double theta0, double theta1) throws Exception{
-	      // Define a function to plot
-     CostMapper mapper = new CostMapper(X, y);
-
-      // Define range and precision for the function to plot
-      Range rangeX = new Range(-10, 10);
-      int stepX = 150;
-      Range rangeY = new Range(-1,4);
-      int stepY = 150;
-      ContourPlot sp = new ContourPlot(rangeX, stepX, rangeY, stepY, mapper, theta0, theta1);
-      sp.plot();
-	}
 	private static INDArray[] gradientDescentMulti(INDArray X, INDArray y, INDArray theta, double alpha, int iterations){
 		int m = y.size(0);
 		INDArray jHistory = Nd4j.zeros(iterations, 1);
@@ -164,56 +145,14 @@ public class Ex1_multi {
         return set.getFeatureMatrix();
 	}
 	
-	private static void warmUpExercise(){
-		INDArray tmp = Nd4j.eye(5);
-		System.out.println(tmp);
-	}
+	
 	
 	private static void pause(){
 	   System.out.println("Program paused. Press enter to continue.\n");
 	   Scanner scanner = new Scanner(System.in);
 	   scanner.nextLine();	
 	}
-//
-//	private static JFrame plotData2(INDArray x, INDArray y, INDArray lrx, INDArray lry){
-//		final XYSeriesCollection dataSet = new XYSeriesCollection();
-//		final XYSeriesCollection dataSet2 = new XYSeriesCollection();
-//        addSeries(dataSet,x,y,"Training Data");
-//        addSeries(dataSet2,lrx,lry,"Linear regression");
-//
-//        final JFreeChart chart = ChartFactory.createScatterPlot(
-//                " ",      // chart title
-//                "Population of City in 10,000s",                        // x axis label
-//                "Profit in $10,000s", // y axis label
-//                dataSet,                    // data
-//                PlotOrientation.VERTICAL,
-//                true,                       // include legend
-//                true,                       // tooltips
-//                false                       // urls
-//        );
-//
-//        final ChartPanel panel = new ChartPanel(chart);
-//        XYPlot xyPlot = chart.getXYPlot();
-//        XYItemRenderer renderer1 = new XYLineAndShapeRenderer(false, true);//shapes
-//        Shape cross = ShapeUtilities.createDiagonalCross(3, 1);
-//        renderer1.setSeriesShape(0, cross);
-//        renderer1.setSeriesPaint(0, Color.red);
-//        xyPlot.setRenderer(0, renderer1);
-//        xyPlot.setDataset(0, dataSet);
-//        
-//        XYItemRenderer renderer2 = new XYLineAndShapeRenderer(true, false);//lines
-//        renderer2.setSeriesPaint(0, Color.blue);
-//        xyPlot.setRenderer(1, renderer2);
-//        xyPlot.setDataset(1, dataSet2);
-//        
-//        final JFrame f = new JFrame();
-//        f.add(panel);
-//        f.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
-//        f.pack();
-//
-//        f.setVisible(true);
-//        return f;
-//	}
+
 	private static JFrame plotData(int iteration, INDArray y){
 		final XYSeriesCollection dataSet = new XYSeriesCollection();
         addSeries(dataSet,iteration,y,"Training Data");
@@ -233,8 +172,7 @@ public class Ex1_multi {
         final ChartPanel panel = new ChartPanel(chart);
         
         XYItemRenderer renderer = chart.getXYPlot().getRenderer();
-//        Shape cross = ShapeUtilities.createDiagonalCross(3, 1);
-//        renderer.setSeriesShape(0, cross);
+
         renderer.setSeriesPaint(0, Color.red);
         final JFrame f = new JFrame();
         f.add(panel);

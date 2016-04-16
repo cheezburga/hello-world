@@ -65,7 +65,7 @@ public class ContourPlot extends AbstractAnalysis{
 		 
 		MapperContourPictureGenerator contour = new MapperContourPictureGenerator(theMapper, theRangeX, theRangeY);
 		
-		cab.setContourImg( contour.getContourImage(new DefaultContourColoringPolicy(myColorMapper), theStepX, theStepY, 40), theRangeX, theRangeY);
+		cab.setContourImg( contour.getContourImage(new DefaultContourColoringPolicy(myColorMapper), theStepX, theStepY, 100), theRangeX, theRangeY);
 		
 		// Add the surface and its colorbar
 		chart.addDrawable(surface);

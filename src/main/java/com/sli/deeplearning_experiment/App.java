@@ -28,6 +28,8 @@ public class App
 //        System.out.println("row:"+tmp2.max(0).rows()+" col:"+tmp2.max(0).columns());
 //        System.out.println(tmp2.max(1));
 //        System.out.println("row:"+tmp2.max(1).rows()+" col:"+tmp2.max(1).columns());
+      
+        
         
     }
 }

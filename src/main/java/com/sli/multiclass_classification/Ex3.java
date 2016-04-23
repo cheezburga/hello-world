@@ -273,43 +273,7 @@ public class Ex3 {
 
 	}
 
-	private static double[] psudoFminunc(INDArray theX, INDArray theY, INDArray initialTheta, double lambda) {
-		SigmoidProblem problem = new SigmoidProblem(theX, theY, lambda);
-		LevenbergMarquardtOptimizer optimizer = new LevenbergMarquardtOptimizer();
-
-		 
-		 int m = theY.size(0);
-		 final double[] weights = Nd4j.ones(m).data().asDouble();
-		 
-		 final double[] initialSolution = initialTheta.data().asDouble();
-
-		 PointVectorValuePair optimum = optimizer.optimize(10,
-		                                                   problem,
-		                                                   problem.calculateTarget(),
-		                                                   weights,
-		                                                   initialSolution);
-
-		 final double[] optimalValues = optimum.getPoint();
-		 
-		 return optimalValues;
-	}
-
-	private static void plotDecisionBoundary(double[] thetaArr, INDArray x1, INDArray x2, INDArray y) throws Exception{
 	
-		INDArray theta = Nd4j.create(thetaArr).transpose();
-	
-		//System.out.println(z);
-		contour(x1, x2, y, theta);
-	}
-	private static double[] linspace(double from, double to, int steps){
-		double[] lin = new double[steps+1];
-		double stepSize = (to - from)/steps;
-		
-		for(int i=0; i<lin.length; i++){
-			lin[i] = stepSize*i+from;  
-		}
-		return lin;
-	}
 	/**
 	% MAPFEATURE Feature mapping function to polynomial features
 	%
@@ -374,31 +338,7 @@ public class Ex3 {
 		return Transforms.pow(Transforms.exp(z.neg()).add(1),-1, true);
 		
 	}
-	private static void surf(INDArray X, INDArray y) throws Exception{
-	      // Define a function to plot
-       CostMapper mapper = new CostMapper(X, y);
-
-        // Define range and precision for the function to plot
-        Range rangeX = new Range(-10, 10);
-        int stepX = 100;
-        Range rangeY = new Range(-1,4);
-        int stepY = 100;
-        SurfacePlot sp = new SurfacePlot(rangeX, stepX, rangeY, stepY, mapper);
-        sp.plot();
-	}
 	
-	private static void contour(INDArray x1, INDArray x2, INDArray y, INDArray theta) throws Exception{
-	      // Define a function to plot
-     CostMapper2 mapper = new CostMapper2(theta);
-
-      // Define range and precision for the function to plot
-      Range rangeX = new Range(-1.0f, 1.5f);
-      int stepX = 100;
-      Range rangeY = new Range(-1.0f, 1.5f);
-      int stepY = 100;
-      ContourPlot2 sp = new ContourPlot2(rangeX, stepX, rangeY, stepY, mapper, x1, x2, y);
-      sp.plot();
-	}
 	
 	public static class CostMapper2 extends Mapper {
 		private INDArray theta;
@@ -453,115 +393,7 @@ public class Ex3 {
         return set.getFeatureMatrix();
 	}
 	
-	private static void warmUpExercise(){
-		INDArray tmp = Nd4j.eye(5);
-		System.out.println(tmp);
-	}
 	
-	private static void pause(){
-	   System.out.println("Program paused. Press enter to continue.\n");
-	   Scanner scanner = new Scanner(System.in);
-	   scanner.nextLine();	
-	}
-
-	private static JFrame plotData2(INDArray x, INDArray y, INDArray lrx, INDArray lry){
-		final XYSeriesCollection dataSet = new XYSeriesCollection();
-		final XYSeriesCollection dataSet2 = new XYSeriesCollection();
-        addSeries(dataSet,x,y,"Training Data");
-        addSeries2(dataSet2,lrx,lry,"Logistic regression");
-
-        final JFreeChart chart = ChartFactory.createScatterPlot(
-                " ",      // chart title
-                "Population of City in 10,000s",                        // x axis label
-                "Profit in $10,000s", // y axis label
-                dataSet,                    // data
-                PlotOrientation.VERTICAL,
-                true,                       // include legend
-                true,                       // tooltips
-                false                       // urls
-        );
-
-        final ChartPanel panel = new ChartPanel(chart);
-        XYPlot xyPlot = chart.getXYPlot();
-        XYItemRenderer renderer1 = new XYLineAndShapeRenderer(false, true);//shapes
-        Shape cross = ShapeUtilities.createDiagonalCross(3, 1);
-        renderer1.setSeriesShape(0, cross);
-        renderer1.setSeriesPaint(1, Color.yellow);
-        xyPlot.setRenderer(0, renderer1);
-        xyPlot.setDataset(0, dataSet);
-        
-        
-        
-        XYItemRenderer renderer2 = new XYLineAndShapeRenderer(true, false);//lines
-        renderer2.setSeriesPaint(0, Color.blue);
-        xyPlot.setRenderer(1, renderer2);
-        xyPlot.setDataset(1, dataSet2);
-        
-        final JFrame f = new JFrame();
-        f.add(panel);
-        f.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
-        f.pack();
-
-        f.setVisible(true);
-        return f;
-	}
-	private static JFrame plotData(INDArray x, INDArray y){
-		final XYSeriesCollection dataSet = new XYSeriesCollection();
-        addSeries(dataSet,x,y,"Training Data");
-      
-
-        final JFreeChart chart = ChartFactory.createScatterPlot(
-                " ",      // chart title
-                "Microchip Test 1",                        // x axis label
-                "Microchip Test 2", // y axis label
-                dataSet,                    // data
-                PlotOrientation.VERTICAL,
-                true,                       // include legend
-                true,                       // tooltips
-                false                       // urls
-        );
-
-        final ChartPanel panel = new ChartPanel(chart);
-        
-        XYItemRenderer renderer = chart.getXYPlot().getRenderer();
-        Shape cross = ShapeUtilities.createRegularCross(3, 1);
-        renderer.setSeriesShape(0, cross);       
-        renderer.setSeriesPaint(1, Color.yellow);
-        final JFrame f = new JFrame();
-        f.add(panel);
-        f.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
-        f.pack();
-
-        f.setVisible(true);
-        return f;
-	}
-	private static void addSeries(final XYSeriesCollection dataSet, final INDArray x, final INDArray y, final String label){
-       
-        final double[] yd = y.data().asDouble();
-        final XYSeries pos = new XYSeries("y=1");
-        final XYSeries neg = new XYSeries("y=0");
-        for( int j=0; j<yd.length; j++ ) {
-        	INDArray row = x.getRow(j);
-        	if(yd[j] == 1.0){
-        		pos.add(row.getDouble(0),row.getDouble(1));
-        	}else{
-        		neg.add(row.getDouble(0),row.getDouble(1));
-        	}
-        	
-        }
-        dataSet.addSeries(pos);
-        dataSet.addSeries(neg);
-    }
 	
-	private static void addSeries2(final XYSeriesCollection dataSet, final INDArray x, final INDArray y, final String label){
-	       
-        final double[] yd = y.data().asDouble();
-        final XYSeries lr = new XYSeries("Decision Boundary");
-       
-        for( int j=0; j<yd.length; j++ ) {
-        	lr.add(x.getRow(j).getDouble(0),y.getRow(j).getDouble(0));
-        }
-        dataSet.addSeries(lr);
-        
-    }
+	
 }

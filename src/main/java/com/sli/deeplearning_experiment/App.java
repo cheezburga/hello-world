@@ -20,8 +20,10 @@ public class App
         System.out.println(nd2);
         INDArray tmp2 = nd2.dup('f').reshape(3,4);
         System.out.println(tmp2);
-        System.out.println(tmp2.max(1).getInt(0));
-        
+        System.out.println(tmp2.max(0));
+        System.out.println("row:"+tmp2.max(0).rows()+" col:"+tmp2.max(0).columns());
+        System.out.println(tmp2.max(1));
+        System.out.println("row:"+tmp2.max(1).rows()+" col:"+tmp2.max(1).columns());
 
     }
 }

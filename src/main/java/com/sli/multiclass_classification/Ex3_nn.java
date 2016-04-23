@@ -56,7 +56,7 @@ import de.jungblut.math.dense.DenseDoubleVector;
 import de.jungblut.math.minimize.CostFunction;
 import de.jungblut.math.minimize.Fmincg;
 
-public class Ex3 {
+public class Ex3_nn {
 	/**
 	 * @param args
 	 * @throws Exception 
@@ -88,10 +88,11 @@ public class Ex3 {
 //			System.out.println("col:"+col+" value:"+cols[col]);
 //		}
 		
-		INDArray y_5000x1 = load("machine-learning/multiclass_classification/ex3data2.txt", totalSamples, " ").getColumn(0).dup();
+		INDArray y_5000x1 = load("machine-learning/multiclass_classification/ex3data2.txt", totalSamples, " ");
 	
 		System.out.println("Y row:"+y_5000x1.rows()+" col:"+y_5000x1.columns()+"\n"+y_5000x1);
 		//Randomly select 100 data points to display
+		
 		
 		List<Integer> arrList = new ArrayList<Integer>();
 	    for (int i = 0; i < totalSamples; i++) {
@@ -108,30 +109,84 @@ public class Ex3 {
 	    INDArray x_100x400 = x_5000x400.getRows(arr);
 	    displayData(x_100x400.dup());
 	    
-		System.out.println("\nTraining One-vs-All Logistic Regression...\n");
+	    INDArray y_100x1 = y_5000x1.getRows(arr);
+	    
+		//================ Part 2: Loading Pameters ================
+		//In this part of the exercise, we load some pre-initialized
+		// neural network parameters
 		
-		double lambda = 0.1;
-		INDArray all_theta = oneVsAll(x_5000x400, y_5000x1, num_labels, lambda);
-
-		INDArray prediction_5000x10 = predictOneVsAll(all_theta, x_5000x400);
-		int correctCount = 0 ;
-		int incorrectCount = 0;
-		for(int row=0; row<5000; row++){
-			int label = y_5000x1.getRow(row).getInt(0);
-			int col = 0;
-			if(label != 10){
-				col = label;
+		
+		
+		
+		System.out.println("\nLoading Saved Neural Network Parameters ...\n");
+		colIndices = new int[401];
+		for(int i=0; i<401; i++){
+			colIndices[i]=i;
+		}
+		INDArray theta1_25x401 = load("machine-learning/multiclass_classification/ex3weights1.txt", 25, " ").getColumns(colIndices);//do not know why it has 402 columnes
+		//System.out.println(theta1_25x402.columns());
+		
+		colIndices = new int[26];
+		for(int i=0; i<26; i++){
+			colIndices[i]=i;
+		}
+		INDArray theta2_10x26 = load("machine-learning/multiclass_classification/ex3weights2.txt", 10, " ").getColumns(colIndices);//do not know why it has 27 columnes;
+		//System.out.println(theta2_10x27.columns());
+		{
+			int correctCount = 0;
+			int incorrectCount = 0;
+			INDArray activationAtOutputLayer_5000x10 = predict(theta1_25x401, theta2_10x26, x_5000x400);
+			INDArray maxValues_5000x1 = activationAtOutputLayer_5000x10.max(1);
+			for(int row=0; row<5000; row++){
+				int label = y_5000x1.getRow(row).getInt(0);
+				int col = label-1;//converting label into column index
+				if(label == 10){
+					col = 9;
+				}
+				boolean isCorrect = (activationAtOutputLayer_5000x10.getDouble(row, col) == maxValues_5000x1.getRow(row).dup().getDouble(0));
+				if(isCorrect){
+					correctCount++;
+				}else{
+					incorrectCount++;
+				}
+				System.out.println("pred@"+row+"/"+4999+": "+isCorrect);
 			}
-			boolean isCorrect = (prediction_5000x10.getDouble(row, col) == 0.0);
-			System.out.println("pred@"+row+"/"+4999+": "+isCorrect);
+			System.out.println("\nTraining Set Accuracy: "+(double)correctCount/(correctCount+incorrectCount));
+			
+		}
+		
+		
+		INDArray activationAtOutputLayer_100x10 = predict(theta1_25x401, theta2_10x26, x_100x400);
+		INDArray maxValues_100x1 = activationAtOutputLayer_100x10.max(1);
+		int correctCount = 0;
+		int incorrectCount = 0;
+		for(int row=0; row<100; row++){
+			int label = y_100x1.getRow(row).getInt(0);
+			int col = label-1;//converting label into column index
+			if(label == 10){
+				col = 9;
+			}
+			boolean isCorrect = (activationAtOutputLayer_100x10.getDouble(row, col) == maxValues_100x1.getRow(row).dup().getDouble(0));
 			if(isCorrect){
 				correctCount++;
 			}else{
 				incorrectCount++;
 			}
+			System.out.println("pred@"+row+"/"+99+": "+isCorrect);
 		}
 		System.out.println("\nTraining Set Accuracy: "+(double)correctCount/(correctCount+incorrectCount));
-
+		
+		
+	}
+	
+	private static INDArray predict(INDArray theta1_25x401, INDArray theta2_10x26, INDArray x){
+		int m = x.rows();
+		INDArray X = Nd4j.hstack(Nd4j.ones(m, 1), x);//5000x401
+		INDArray activationAtHiddenLayer_5000x25 = Transforms.sigmoid(X.mmul(theta1_25x401.transpose()),true);
+		INDArray activationAtOutputLayer_5000x10 = Transforms.sigmoid(Nd4j.hstack(Nd4j.ones(m, 1),activationAtHiddenLayer_5000x25).mmul(theta2_10x26.transpose()));
+		System.out.println(activationAtOutputLayer_5000x10);
+		return activationAtOutputLayer_5000x10;
+		
 	}
 	
 	private static INDArray predictOneVsAll(INDArray all_theta, INDArray x){

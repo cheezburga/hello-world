@@ -42,6 +42,15 @@ import org.springframework.core.io.ClassPathResource;
 import com.sli.deeplearning_experiment.ContourPlot2;
 import com.sli.deeplearning_experiment.CostMapper;
 import com.sli.deeplearning_experiment.SurfacePlot;
+import com.sli.logistic_regression.Ex2_reg.CostMapper2;
+
+import de.jungblut.classification.regression.LogisticRegressionCostFunction;
+import de.jungblut.math.DoubleMatrix;
+import de.jungblut.math.DoubleVector;
+import de.jungblut.math.dense.DenseDoubleMatrix;
+import de.jungblut.math.dense.DenseDoubleVector;
+import de.jungblut.math.minimize.CostFunction;
+import de.jungblut.math.minimize.Fmincg;
 
 public class Ex2_reg {
 	/**
@@ -83,38 +92,59 @@ public class Ex2_reg {
 //
 //		
 //		//============= Part 3: Optimizing using fminunc  =============
-		double[] thetaFromFminunc = new double[]{  1.273005,
-				   0.624876,
-				   1.177376,
-				  -2.020142,
-				  -0.912616,
-				  -1.429907,
-				   0.125668,
-				  -0.368551,
-				  -0.360033,
-				  -0.171068,
-				  -1.460894,
-				  -0.052499,
-				  -0.618889,
-				  -0.273745,
-				  -1.192301,
-				  -0.240993,
-				  -0.207934,
-				  -0.047224,
-				  -0.278327,
-				  -0.296602,
-				  -0.453957,
-				  -1.045511,
-				   0.026463,
-				  -0.294330,
-				   0.014381,
-				  -0.328703,
-				  -0.143796,
-				  -0.924883};//TODO dsze need to find fminunc java implementation instead of cheating off of octave
+//		double[] thetaFromFminunc = new double[]{  1.273005,
+//				   0.624876,
+//				   1.177376,
+//				  -2.020142,
+//				  -0.912616,
+//				  -1.429907,
+//				   0.125668,
+//				  -0.368551,
+//				  -0.360033,
+//				  -0.171068,
+//				  -1.460894,
+//				  -0.052499,
+//				  -0.618889,
+//				  -0.273745,
+//				  -1.192301,
+//				  -0.240993,
+//				  -0.207934,
+//				  -0.047224,
+//				  -0.278327,
+//				  -0.296602,
+//				  -0.453957,
+//				  -1.045511,
+//				   0.026463,
+//				  -0.294330,
+//				   0.014381,
+//				  -0.328703,
+//				  -0.143796,
+//				  -0.924883};//TODO dsze need to find fminunc java implementation instead of cheating off of octave
 
 		//double[] thetaFromFminunc = psudoFminunc(X, y_118x1, initialTheta, lambda); //computed values are { -20.787734661837316, 0.16952576514500547, 0.1694823440653863 };
-		System.out.println(Arrays.toString(thetaFromFminunc));
+		//System.out.println(Arrays.toString(thetaFromFminunc));
+		DoubleVector startingTheta = new DenseDoubleVector(X.size(1), 0);
 		
+		double[][] dm_x_arr = new double[X.rows()][X.columns()];
+		for(int row=0; row<X.rows(); row++){
+			for(int col=0; col<X.columns(); col++){
+				dm_x_arr[row][col] = X.getDouble(row, col);
+			}
+		}
+		DoubleMatrix dm_x = new DenseDoubleMatrix(dm_x_arr);
+
+		double[][] dm_y_arr = new double[y_118x1.rows()][y_118x1.columns()];
+		for(int row=0; row<y_118x1.rows(); row++){
+			for(int col=0; col<y_118x1.columns(); col++){
+				dm_y_arr[row][col] = y_118x1.getDouble(row, col);
+			}
+		}
+		DoubleMatrix dm_y = new DenseDoubleMatrix(dm_y_arr).transpose();
+		
+		CostFunction cf = new LogisticRegressionCostFunction(dm_x,dm_y,lambda);
+		DoubleVector dv = Fmincg.minimizeFunction(cf, startingTheta, 500, false);
+		System.out.println("XX"+Arrays.toString(dv.toArray()));
+		double[] thetaFromFminunc = dv.toArray();//we use fmincg since we cant find java implementation of fminunc and fmincg is favorable to high feature counts.
 		plotDecisionBoundary(thetaFromFminunc, x_118x2.getColumn(0).dup(), x_118x2.getColumn(1).dup(), y_118x1);
 		
 		int totalMatch = 0;
@@ -208,28 +238,28 @@ public class Ex2_reg {
 
 	}
 
-	private static double[] psudoFminunc(INDArray theX, INDArray theY, INDArray initialTheta, int lambda) {
-		SigmoidProblem problem = new SigmoidProblem(theX, theY, lambda);
-		LevenbergMarquardtOptimizer optimizer = new LevenbergMarquardtOptimizer();
-
-		 
-		 int m = theY.size(0);
-		 final double[] weights = Nd4j.ones(m).data().asDouble();
-		 
-		 final double[] initialSolution = initialTheta.data().asDouble();
-
-		 PointVectorValuePair optimum = optimizer.optimize(1000,
-		                                                   problem,
-		                                                   problem.calculateTarget(),
-		                                                   weights,
-		                                                   initialSolution);
-
-		 final double[] optimalValues = optimum.getPoint();
-		 System.out.println("A: " + optimalValues[0]);
-		 System.out.println("B: " + optimalValues[1]);
-		 System.out.println("C: " + optimalValues[2]);
-		 return optimalValues;
-	}
+//	private static double[] psudoFminunc(INDArray theX, INDArray theY, INDArray initialTheta, int lambda) {
+//		SigmoidProblem problem = new SigmoidProblem(theX, theY, lambda);
+//		LevenbergMarquardtOptimizer optimizer = new LevenbergMarquardtOptimizer();
+//
+//		 
+//		 int m = theY.size(0);
+//		 final double[] weights = Nd4j.ones(m).data().asDouble();
+//		 
+//		 final double[] initialSolution = initialTheta.data().asDouble();
+//
+//		 PointVectorValuePair optimum = optimizer.optimize(1000,
+//		                                                   problem,
+//		                                                   problem.calculateTarget(),
+//		                                                   weights,
+//		                                                   initialSolution);
+//
+//		 final double[] optimalValues = optimum.getPoint();
+//		 System.out.println("A: " + optimalValues[0]);
+//		 System.out.println("B: " + optimalValues[1]);
+//		 System.out.println("C: " + optimalValues[2]);
+//		 return optimalValues;
+//	}
 
 	private static void plotDecisionBoundary(double[] thetaArr, INDArray x1, INDArray x2, INDArray y) throws Exception{
 	

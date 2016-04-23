@@ -48,6 +48,14 @@ import com.sli.deeplearning_experiment.ContourPlot2;
 import com.sli.deeplearning_experiment.CostMapper;
 import com.sli.deeplearning_experiment.SurfacePlot;
 
+import de.jungblut.classification.regression.LogisticRegressionCostFunction;
+import de.jungblut.math.DoubleMatrix;
+import de.jungblut.math.DoubleVector;
+import de.jungblut.math.dense.DenseDoubleMatrix;
+import de.jungblut.math.dense.DenseDoubleVector;
+import de.jungblut.math.minimize.CostFunction;
+import de.jungblut.math.minimize.Fmincg;
+
 public class Ex3 {
 	/**
 	 * @param args
@@ -80,8 +88,9 @@ public class Ex3 {
 //			System.out.println("col:"+col+" value:"+cols[col]);
 //		}
 		
-		INDArray y_5000x1 = load("machine-learning/multiclass_classification/ex3data2.txt", totalSamples, " ");
-		
+		INDArray y_5000x1 = load("machine-learning/multiclass_classification/ex3data2.txt", totalSamples, " ").getColumn(0).dup();
+	
+		System.out.println("Y row:"+y_5000x1.rows()+" col:"+y_5000x1.columns()+"\n"+y_5000x1);
 		//Randomly select 100 data points to display
 		
 		List<Integer> arrList = new ArrayList<Integer>();
@@ -95,13 +104,34 @@ public class Ex3 {
 	    	arr[i] = arrList.get(i);
 	    }
 	   
-	    System.out.println(Arrays.toString(arr));
+//	    System.out.println(Arrays.toString(arr));
 	    INDArray x_100x400 = x_5000x400.getRows(arr);
 	    displayData(x_100x400.dup());
 	    
+		System.out.println("\nTraining One-vs-All Logistic Regression...\n");
 		
-		
-//		INDArray x_118x2 = x_5000x400.getColumns(0,1).dup();
+		double lambda = 0.1;
+		INDArray all_theta = oneVsAll(x_5000x400, y_5000x1, num_labels, lambda);
+
+		INDArray prediction_5000x10 = predictOneVsAll(all_theta, x_5000x400);
+		int correctCount = 0 ;
+		int incorrectCount = 0;
+		for(int row=0; row<5000; row++){
+			int label = y_5000x1.getInt(row, 0);
+			int col = 0;
+			if(label != 10){
+				col = label;
+			}
+			boolean isCorrect = (prediction_5000x10.getDouble(row, col) == 0.0);
+			System.out.println("pred@"+row+"/"+4999+": "+isCorrect);
+			if(isCorrect){
+				correctCount++;
+			}else{
+				incorrectCount++;
+			}
+		}
+		System.out.println("\nTraining Set Accuracy: "+(double)correctCount/(correctCount+incorrectCount));
+		//		INDArray x_118x2 = x_5000x400.getColumns(0,1).dup();
 //		INDArray y_118x1 = y_5000x1.getColumn(2).dup();
 //	
 //		
@@ -175,6 +205,62 @@ public class Ex3 {
 		
 	}
 	
+	private static INDArray predictOneVsAll(INDArray all_theta, INDArray x){
+		int num_lables = all_theta.rows();
+		int m = x.rows();
+		INDArray X = Nd4j.hstack(Nd4j.ones(m, 1), x);
+		INDArray k = X.mmul(all_theta.transpose());//5000x401 * 401x10 = 5000x10
+		INDArray o = k.subColumnVector(k.max(1));//5000x10 - 5000x1
+		System.out.println("x"+o);
+		return o;
+	}
+	
+	private static INDArray oneVsAll(INDArray X, INDArray y, int num_labels, double lambda){
+		int m = X.rows();
+		int n = X.columns();
+		INDArray all_theta_10x401 = Nd4j.zeros(num_labels, n+1);
+		INDArray x_5000x401 = Nd4j.hstack(Nd4j.ones(m, 1),X);
+		for(int c=0; c<num_labels; c++){
+			//INDArray initial_theta_401x1 = Nd4j.zeros(n+1, 1);
+			//10 labels, from 1 to 10 (note that we have mapped "0" to label 10)
+			double[] theta = null;
+			if(c == 0){
+				theta = fmincg(x_5000x401, y.eq(10), lambda);
+			}else{
+				theta = fmincg(x_5000x401, y.eq(c), lambda);
+			}
+			//System.out.println(Arrays.toString(theta));
+			all_theta_10x401.getRow(c).assign(Nd4j.create(theta));
+			System.out.println("fmincg @"+c +"/"+num_labels);
+		}
+		return all_theta_10x401;
+	}
+	
+	
+	private static double[] fmincg(INDArray X, INDArray y, double lambda){
+		DoubleVector startingTheta = new DenseDoubleVector(X.size(1), 0);
+		
+		double[][] dm_x_arr = new double[X.rows()][X.columns()];
+		for(int row=0; row<X.rows(); row++){
+			for(int col=0; col<X.columns(); col++){
+				dm_x_arr[row][col] = X.getDouble(row, col);
+			}
+		}
+		DoubleMatrix dm_x = new DenseDoubleMatrix(dm_x_arr);
+
+		double[][] dm_y_arr = new double[y.rows()][y.columns()];
+		for(int row=0; row<y.rows(); row++){
+			for(int col=0; col<y.columns(); col++){
+				dm_y_arr[row][col] = y.getDouble(row, col);
+			}
+		}
+		DoubleMatrix dm_y = new DenseDoubleMatrix(dm_y_arr).transpose();
+		
+		CostFunction cf = new LogisticRegressionCostFunction(dm_x,dm_y,lambda);
+		DoubleVector dv = Fmincg.minimizeFunction(cf, startingTheta, 50, false);
+		//System.out.println("XX"+Arrays.toString(dv.toArray()));
+		return dv.toArray();
+	}
 	private static void displayData(INDArray x_100x400){
 		ColorPan cp = new ColorPan(x_100x400);
 		cp.plot();
@@ -196,8 +282,8 @@ public class Ex3 {
 	private static class SigmoidProblem implements DifferentiableMultivariateVectorFunction, Serializable {
 		INDArray X;
 		INDArray y;
-		int lambda;
-		public SigmoidProblem(final INDArray theX, final INDArray theY, final int lambda) {
+		double lambda;
+		public SigmoidProblem(final INDArray theX, final INDArray theY, final double lambda) {
 			this.X = theX;
 			this.y = theY;
 			this.lambda = lambda;
@@ -257,7 +343,7 @@ public class Ex3 {
 
 	}
 
-	private static double[] psudoFminunc(INDArray theX, INDArray theY, INDArray initialTheta, int lambda) {
+	private static double[] psudoFminunc(INDArray theX, INDArray theY, INDArray initialTheta, double lambda) {
 		SigmoidProblem problem = new SigmoidProblem(theX, theY, lambda);
 		LevenbergMarquardtOptimizer optimizer = new LevenbergMarquardtOptimizer();
 
@@ -267,16 +353,14 @@ public class Ex3 {
 		 
 		 final double[] initialSolution = initialTheta.data().asDouble();
 
-		 PointVectorValuePair optimum = optimizer.optimize(1000,
+		 PointVectorValuePair optimum = optimizer.optimize(10,
 		                                                   problem,
 		                                                   problem.calculateTarget(),
 		                                                   weights,
 		                                                   initialSolution);
 
 		 final double[] optimalValues = optimum.getPoint();
-		 System.out.println("A: " + optimalValues[0]);
-		 System.out.println("B: " + optimalValues[1]);
-		 System.out.println("C: " + optimalValues[2]);
+		 
 		 return optimalValues;
 	}
 
